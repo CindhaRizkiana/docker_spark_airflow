@@ -1,0 +1,32 @@
+# Use the base Apache Airflow image
+FROM apache/airflow:2.7.1-python3.9
+
+# Switch to root user for installing dependencies
+USER root
+
+# Install OpenJDK-11
+RUN apt update && \
+    apt-get install -y openjdk-11-jdk && \
+    apt-get install -y ant && \
+    apt-get install -y procps && \
+    apt-get clean;
+
+# Set JAVA_HOME
+ENV JAVA_HOME /usr/lib/jvm/java-11-openjdk-amd64
+
+# Switch back to the airflow user
+USER airflow
+
+# Install Python dependencies
+RUN pip install \
+    lxml \
+    pyspark==3.3.2 \
+    apache-airflow-providers-apache-spark \
+    requests \
+    pandas
+
+# Copy JAR files from Spark image
+COPY --from=dataeng/spark /opt/bitnami/spark/jars /opt/bitnami/spark/jars
+
+# Copy DAGs into the Airflow image
+COPY --chown=airflow:root ./dags /opt/airflow/dags
